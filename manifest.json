@@ -1,0 +1,12 @@
+{
+  "name": "麻雀 点数管理",
+  "short_name": "麻雀点数管理",
+  "start_url": "./麻雀点数管理.html",
+  "display": "standalone",
+  "background_color": "#f7f8fa",
+  "theme_color": "#2c3e50",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
