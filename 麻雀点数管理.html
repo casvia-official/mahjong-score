@@ -90,7 +90,7 @@
   table.stats{ border-collapse:collapse; width:auto; min-width:100%; font-size:13px; }
   table.stats th, table.stats td{ border:1px solid var(--border); padding:5px 7px; text-align:center; }
   table.stats th{ background:#eef1f4; }
-  table.stats td.name{ text-align:left; font-weight:bold; background:#f5f7fa; }
+  table.stats td.name{ text-align:left; font-weight:bold; background:#f5f7fa; white-space:nowrap; }
   .plus{ color:var(--accent); }
   .minus{ color:var(--danger); }
 
@@ -730,7 +730,7 @@
       rows.forEach((tr,p)=>{
         const stats = computeBlockStats(s,e,p);
         const tds = tr.querySelectorAll("td.subtotal");
-        tds[0].textContent = formatSigned(stats.total);
+        tds[0].innerHTML = formatSigned(stats.total);
         tds[1].textContent = stats.count>0 ? stats.avgRank.toFixed(2) : "-";
       });
     });
