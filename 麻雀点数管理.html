@@ -106,6 +106,12 @@
   }
   .muted{ color:#888; font-size:12px; }
   .hint{ font-size:12px; color:#777; margin-top:4px; }
+  .draft-save-status{
+    font-size:14px; font-weight:bold; margin-top:4px; padding:8px 12px; border-radius:6px;
+    display:none; align-items:center; gap:6px;
+  }
+  .draft-save-status.show{ display:flex; }
+  .draft-save-status.ok{ background:#e8f7ee; color:#1e7e42; border:1px solid #b7e3c7; }
   .badge{ display:inline-block; padding:1px 6px; border-radius:10px; background:#dfe6ea; font-size:11px; margin-left:4px;}
 
   .avatar{ border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:5px; background:#ddd; }
@@ -198,11 +204,13 @@
     <div class="panel" id="gridPanel" style="display:none;">
       <h2>成績入力 <span id="gridSummaryLine" class="muted"></span></h2>
       <div class="row">
+        <button id="btnSaveDraft" class="primary">一時保存（今の入力内容を保存）</button>
         <button id="btnAutoRotate">休憩を自動ローテーション設定</button>
         <button id="btnConfirmDay" class="primary">本日分を確定してサマリーに反映</button>
         <button id="btnResetGrid" class="danger">入力をクリア</button>
       </div>
-      <div class="hint">各半荘は、ウマ・オカ・トビまで加味した最終の点差（例：+45, -12 のように1000点単位）を入力してください。卓に着いた人のうち(N-1)人分入力後に自動計算ボタンで残り1人を算出できます。列の合計が0でない場合はセルが赤くなります。休む人は各セルの「休」にチェックしてください。</div>
+      <div class="draft-save-status" id="draftSaveStatus"></div>
+      <div class="hint">各半荘は、ウマ・オカ・トビまで加味した最終の点差（例：+45, -12 のように1000点単位）を入力してください。卓に着いた人のうち(N-1)人分入力後に自動計算ボタンで残り1人を算出できます。列の合計が0でない場合はセルが赤くなります。休む人は各セルの「休」にチェックしてください。1半荘分（全員の点数）を入れ終わったら「一時保存」を押すことをおすすめします。</div>
 
       <div class="block-title-row">
         <span class="block-title">前半戦（1〜10半荘）</span>
@@ -664,6 +672,7 @@
     document.getElementById("editingHint").textContent = "";
     document.getElementById("gridPanel").style.display = "";
     document.getElementById("statsPanel").style.display = "";
+    hideDraftSaveStatus();
     renderGrid();
     renderStats();
     saveDraft();
@@ -725,6 +734,7 @@
         updateSubtotalsOnly();
         renderStats();
         saveDraft();
+        hideDraftSaveStatus();
       });
     });
     document.querySelectorAll("input.restBox").forEach(chk=>{
@@ -736,8 +746,14 @@
         renderGrid();
         renderStats();
         saveDraft();
+        hideDraftSaveStatus();
       });
     });
+  }
+
+  function hideDraftSaveStatus(){
+    const el = document.getElementById("draftSaveStatus");
+    if(el) el.classList.remove("show");
   }
 
   // 小計・平均順位だけ再計算して差し替え（入力欄再描画によるフォーカス喪失を防ぐ）
@@ -830,6 +846,25 @@
       }
     }
   }
+
+  // ---------------------------------------------------------------
+  // 一時保存（手動）：押した瞬間に目に見える形で保存できたことを示す
+  // ---------------------------------------------------------------
+  function showDraftSaveStatus(){
+    const el = document.getElementById("draftSaveStatus");
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,"0");
+    const mm = String(now.getMinutes()).padStart(2,"0");
+    const ss = String(now.getSeconds()).padStart(2,"0");
+    el.className = "draft-save-status ok show";
+    el.textContent = "✓ "+hh+":"+mm+":"+ss+" に保存しました（この端末に保存済みです）";
+  }
+
+  document.getElementById("btnSaveDraft").addEventListener("click", ()=>{
+    if(!currentDay){ alert("先に「この設定で開始」を押して対局を開始してください。"); return; }
+    saveDraft();
+    showDraftSaveStatus();
+  });
 
   // ---------------------------------------------------------------
   // 休憩の自動ローテーション設定
@@ -1044,6 +1079,7 @@
     document.getElementById("editingHint").textContent = "※ "+rec.date+" の記録を編集中です（確定すると上書きされます）";
     document.getElementById("gridPanel").style.display = "";
     document.getElementById("statsPanel").style.display = "";
+    hideDraftSaveStatus();
     renderGrid();
     renderStats();
     saveDraft();
@@ -1313,6 +1349,9 @@
     document.getElementById("statsPanel").style.display = "";
     renderGrid();
     renderStats();
+    const statusEl = document.getElementById("draftSaveStatus");
+    statusEl.className = "draft-save-status ok show";
+    statusEl.textContent = "✓ 保存されていたデータを復元しました";
   }
 
   renderHistoryList();
