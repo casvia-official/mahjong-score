@@ -311,6 +311,7 @@
 
   const LS_ROSTER = "mj_roster";
   const LS_HISTORY = "mj_history";
+  const LS_DRAFT = "mj_draft"; // 入力中（未確定）の対局データを自動保存しておく場所
   const HANCHAN_TOTAL = 20;
 
   let roster = loadJSON(LS_ROSTER, []);
@@ -329,6 +330,22 @@
   }
   function saveRoster(){ localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); }
   function saveHistory(){ localStorage.setItem(LS_HISTORY, JSON.stringify(history)); }
+
+  // ---------------------------------------------------------------
+  // 入力中データの自動保存（アプリが落ちても続きから再開できるようにする）
+  // ---------------------------------------------------------------
+  function saveDraft(){
+    if(!currentDay) return;
+    try{
+      localStorage.setItem(LS_DRAFT, JSON.stringify({ currentDay, editingIndex }));
+    }catch(e){ /* 保存容量オーバー等は無視 */ }
+  }
+  function clearDraft(){
+    localStorage.removeItem(LS_DRAFT);
+  }
+  function loadDraft(){
+    return loadJSON(LS_DRAFT, null);
+  }
 
   // ---------------------------------------------------------------
   // タブ切替
@@ -649,6 +666,7 @@
     document.getElementById("statsPanel").style.display = "";
     renderGrid();
     renderStats();
+    saveDraft();
   });
 
   function hasAnyInput(day){
@@ -706,6 +724,7 @@
         highlightBadColumns();
         updateSubtotalsOnly();
         renderStats();
+        saveDraft();
       });
     });
     document.querySelectorAll("input.restBox").forEach(chk=>{
@@ -716,6 +735,7 @@
         if(chk.checked) currentDay.hanchans[h][p] = null;
         renderGrid();
         renderStats();
+        saveDraft();
       });
     });
   }
@@ -831,6 +851,7 @@
     }
     renderGrid();
     renderStats();
+    saveDraft();
   });
 
   // ---------------------------------------------------------------
@@ -855,6 +876,7 @@
     }
     renderGrid();
     renderStats();
+    saveDraft();
     if(filledCount === 0) alert("自動計算できる空欄（残り1人分だけ空欄の半荘）が見つかりませんでした。");
   }
   document.getElementById("btnAutoFillA").addEventListener("click", ()=> autoFillRange(0, 10));
@@ -866,6 +888,7 @@
     currentDay.hanchans = Array.from({length:HANCHAN_TOTAL}, ()=>Array(currentDay.players.length).fill(null));
     renderGrid();
     renderStats();
+    saveDraft();
   });
 
   // ---------------------------------------------------------------
@@ -954,6 +977,7 @@
     editingIndex = null;
     document.getElementById("editingHint").textContent = "";
     renderHistoryList();
+    clearDraft();
     alert("本日分をサマリーに反映しました。");
   });
 
@@ -1022,6 +1046,7 @@
     document.getElementById("statsPanel").style.display = "";
     renderGrid();
     renderStats();
+    saveDraft();
     window.scrollTo({top:0, behavior:"smooth"});
   }
 
@@ -1250,7 +1275,48 @@
     });
   });
 
+  // ---------------------------------------------------------------
+  // 入力途中データの再開（アプリが落ちても続きから入力できるようにする）
+  // ---------------------------------------------------------------
+  function resumeDraftIfAny(){
+    const draft = loadDraft();
+    if(!draft || !draft.currentDay) return;
+    const d = draft.currentDay;
+    if(!d.players || !d.players.length){ clearDraft(); return; }
+
+    if(!confirm("前回入力途中だったデータ（"+d.date+"）が見つかりました。続きから再開しますか？\n「キャンセル」を選ぶとこのデータは破棄されます。")){
+      clearDraft();
+      return;
+    }
+
+    currentDay = d;
+    editingIndex = (draft.editingIndex === undefined) ? null : draft.editingIndex;
+
+    // 旧データ互換：activeCount / rests が無い場合は全員参加として扱う
+    if(!currentDay.activeCount) currentDay.activeCount = currentDay.playerCount || currentDay.players.length;
+    if(!currentDay.rests){
+      currentDay.rests = Array.from({length:HANCHAN_TOTAL}, ()=>Array(currentDay.players.length).fill(false));
+    }
+
+    document.getElementById("inDate").value = currentDay.date;
+    document.getElementById("inPlayerCount").value = currentDay.activeCount;
+    renderParticipantCountOptions();
+    document.getElementById("inParticipantCount").value = currentDay.players.length;
+    renderPlayerSelects();
+    const selects = document.querySelectorAll("select.playerSelect");
+    selects.forEach((s,i)=>{ s.value = currentDay.players[i]; });
+
+    if(editingIndex !== null){
+      document.getElementById("editingHint").textContent = "※ 保存済み記録を編集中です（確定すると上書きされます）";
+    }
+    document.getElementById("gridPanel").style.display = "";
+    document.getElementById("statsPanel").style.display = "";
+    renderGrid();
+    renderStats();
+  }
+
   renderHistoryList();
+  resumeDraftIfAny();
 })();
 </script>
 <script>
