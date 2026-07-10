@@ -1010,10 +1010,14 @@
     }
     saveHistory();
     editingIndex = null;
+    currentDay = null;
     document.getElementById("editingHint").textContent = "";
+    document.getElementById("gridPanel").style.display = "none";
+    document.getElementById("statsPanel").style.display = "none";
+    hideDraftSaveStatus();
     renderHistoryList();
     clearDraft();
-    alert("本日分をサマリーに反映しました。");
+    alert("本日分をサマリーに反映しました。記録は下の「保存済みの記録」から確認できます。");
   });
 
   // ---------------------------------------------------------------
