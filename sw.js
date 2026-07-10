@@ -1,9 +1,10 @@
 // オフラインでも起動できるようにするためのService Worker
 // 更新を配りたい時は CACHE_NAME の数字を上げること（古いキャッシュを破棄して新しいファイルを取りに行かせる）
-const CACHE_NAME = "mahjong-score-cache-v2";
+const CACHE_NAME = "mahjong-score-cache-v3";
+const MAIN_PAGE = "./麻雀点数管理.html";
 const PRECACHE_ASSETS = [
   "./index.html",
-  "./麻雀点数管理.html",
+  MAIN_PAGE,
   "./manifest.json",
   "./icons/icon-32.png",
   "./icons/icon-180.png",
@@ -36,22 +37,41 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// 画面遷移（ページ本体の読み込み）の場合、たとえキャッシュキーが完全一致しなくても、
+// オフライン時は必ずキャッシュ済みのアプリ本体を返す（応答なし＝エラーになるのを防ぐ）
+function offlineFallback(request){
+  if(request.mode === "navigate" || (request.destination === "document")){
+    return caches.match(MAIN_PAGE).then((page) => page || caches.match("./index.html"));
+  }
+  return Promise.resolve(new Response("", { status: 504, statusText: "Offline" }));
+}
+
 // stale-while-revalidate: キャッシュがあれば即返しつつ、裏で最新版を取得してキャッシュを更新する
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const request = event.request;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const networkFetch = fetch(event.request)
+    caches.match(request).then((cached) => {
+      if (cached) {
+        // 裏で最新版を取りに行ってキャッシュを更新する（結果は待たない）
+        fetch(request)
+          .then((response) => {
+            if (response && response.ok && !response.redirected) {
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone())).catch(() => {});
+            }
+          })
+          .catch(() => {});
+        return cached;
+      }
+      return fetch(request)
         .then((response) => {
-          // リダイレクトされたレスポンスや失敗レスポンスはキャッシュに保存できないためスキップする
           if (response && response.ok && !response.redirected) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone())).catch(() => {});
           }
           return response;
         })
-        .catch(() => cached);
-      return cached || networkFetch;
+        .catch(() => offlineFallback(request));
     })
   );
 });
