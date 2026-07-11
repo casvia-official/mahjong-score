@@ -74,6 +74,10 @@
   table.grid th, table.grid td{ border:1px solid var(--border); padding:4px 5px; text-align:center; }
   table.grid th{ background:#eef1f4; white-space:nowrap; }
   table.grid td.namecell{ text-align:left; font-weight:bold; background:#f5f7fa; white-space:nowrap; }
+  table.grid th:first-child, table.grid td.namecell{
+    position:sticky; left:0; z-index:2; box-shadow:2px 0 4px rgba(0,0,0,0.08);
+  }
+  table.grid th:first-child{ z-index:3; }
   table.grid input.score{
     width:70px; text-align:right; padding:3px 4px; font-size:16px; border:1px solid #ccc; border-radius:3px;
   }
@@ -91,6 +95,10 @@
   table.stats th, table.stats td{ border:1px solid var(--border); padding:5px 7px; text-align:center; }
   table.stats th{ background:#eef1f4; }
   table.stats td.name{ text-align:left; font-weight:bold; background:#f5f7fa; white-space:nowrap; }
+  table.stats th:first-child, table.stats td.name{
+    position:sticky; left:0; z-index:2; box-shadow:2px 0 4px rgba(0,0,0,0.08);
+  }
+  table.stats th:first-child{ z-index:3; }
   .plus{ color:var(--accent); }
   .minus{ color:var(--danger); }
 
