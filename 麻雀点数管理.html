@@ -186,6 +186,17 @@
       <h2>本日の設定</h2>
       <div class="row">
         <div class="field">
+          <label>いつものメンバー</label>
+          <select id="inPreset">
+            <option value="">-- 選択しない（自分で設定） --</option>
+          </select>
+        </div>
+        <button id="btnSavePreset">今の設定を保存</button>
+        <button id="btnDeletePreset" class="danger">選択中のプリセットを削除</button>
+      </div>
+      <div class="hint">卓人数・参加人数・参加者をまとめて選んだ状態を「いつものメンバー」として名前を付けて保存できます。次回はプルダウンから選ぶだけで自動入力されます。</div>
+      <div class="row">
+        <div class="field">
           <label>開催日</label>
           <input type="date" id="inDate">
         </div>
@@ -329,12 +340,14 @@
   const LS_ROSTER = "mj_roster";
   const LS_HISTORY = "mj_history";
   const LS_DRAFT = "mj_draft"; // 入力中（未確定）の対局データを自動保存しておく場所
+  const LS_PRESETS = "mj_presets"; // 「いつものメンバー」プリセット
   const HANCHAN_TOTAL = 20;
 
   let roster = loadJSON(LS_ROSTER, []);
   // 旧データ互換：roster がただの名前配列だった場合 {name, image} 形式に変換
   roster = roster.map(r => (typeof r === "string") ? { name:r, image:null } : r);
   let history = loadJSON(LS_HISTORY, []);
+  let presets = loadJSON(LS_PRESETS, []); // [{name, activeCount, participantCount, players[]}]
 
   let currentDay = null;      // {date, activeCount, players[], hanchans[20][playerCount]}
   let editingIndex = null;    // index in history[] currently being edited, or null = new
@@ -347,6 +360,7 @@
   }
   function saveRoster(){ localStorage.setItem(LS_ROSTER, JSON.stringify(roster)); }
   function saveHistory(){ localStorage.setItem(LS_HISTORY, JSON.stringify(history)); }
+  function savePresets(){ localStorage.setItem(LS_PRESETS, JSON.stringify(presets)); }
 
   // ---------------------------------------------------------------
   // 入力中データの自動保存（アプリが落ちても続きから再開できるようにする）
@@ -653,6 +667,80 @@
   renderParticipantCountOptions();
   renderPlayerSelects();
   renderRoster();
+
+  // ---------------------------------------------------------------
+  // 「いつものメンバー」プリセット
+  // ---------------------------------------------------------------
+  function renderPresetOptions(){
+    const sel = document.getElementById("inPreset");
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">-- 選択しない（自分で設定） --</option>';
+    presets.forEach((p, idx)=>{
+      const opt = document.createElement("option");
+      opt.value = String(idx);
+      opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
+    if(prev && presets[parseInt(prev,10)]) sel.value = prev;
+  }
+  renderPresetOptions();
+
+  document.getElementById("inPreset").addEventListener("change", ()=>{
+    const idx = document.getElementById("inPreset").value;
+    if(idx === "") return;
+    const preset = presets[parseInt(idx,10)];
+    if(!preset) return;
+
+    document.getElementById("inPlayerCount").value = preset.activeCount;
+    renderParticipantCountOptions();
+    document.getElementById("inParticipantCount").value = preset.participantCount;
+    renderPlayerSelects();
+    const selects = document.querySelectorAll("select.playerSelect");
+    selects.forEach((s,i)=>{
+      if(preset.players[i]){
+        s.value = preset.players[i];
+        s.dispatchEvent(new Event("change"));
+      }
+    });
+  });
+
+  document.getElementById("btnSavePreset").addEventListener("click", ()=>{
+    const activeCount = parseInt(document.getElementById("inPlayerCount").value, 10);
+    const participantCount = parseInt(document.getElementById("inParticipantCount").value, 10);
+    const selects = Array.from(document.querySelectorAll("select.playerSelect"));
+    const players = selects.map(s=>s.value);
+    if(players.some(p=>!p)){ alert("参加者を全員選択してから保存してください。"); return; }
+    if(new Set(players).size !== players.length){ alert("同じ参加者が重複しています。"); return; }
+
+    const name = prompt("この設定を「いつものメンバー」として保存します。名前を付けてください（例：いつものメンバー1）");
+    if(name === null) return;
+    const trimmed = name.trim();
+    if(!trimmed) return;
+
+    const existingIdx = presets.findIndex(p=>p.name===trimmed);
+    const preset = { name: trimmed, activeCount, participantCount, players };
+    if(existingIdx >= 0){
+      if(!confirm('"'+trimmed+'" は既にあります。上書きしますか？')) return;
+      presets[existingIdx] = preset;
+    } else {
+      presets.push(preset);
+    }
+    savePresets();
+    renderPresetOptions();
+    document.getElementById("inPreset").value = String(presets.indexOf(preset));
+    alert('"'+trimmed+'" として保存しました。');
+  });
+
+  document.getElementById("btnDeletePreset").addEventListener("click", ()=>{
+    const idx = document.getElementById("inPreset").value;
+    if(idx === ""){ alert("削除するプリセットを選択してください。"); return; }
+    const preset = presets[parseInt(idx,10)];
+    if(!preset) return;
+    if(!confirm('"'+preset.name+'" を削除しますか？')) return;
+    presets.splice(parseInt(idx,10), 1);
+    savePresets();
+    renderPresetOptions();
+  });
 
   // ---------------------------------------------------------------
   // 対局開始
