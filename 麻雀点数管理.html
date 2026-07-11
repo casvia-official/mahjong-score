@@ -216,6 +216,7 @@
         <button id="btnAutoRotate">休憩を自動ローテーション設定</button>
         <button id="btnConfirmDay" class="primary">本日分を確定してサマリーに反映</button>
         <button id="btnResetGrid" class="danger">入力をクリア</button>
+        <button id="btnDeleteRecord" class="danger" style="display:none;">この記録を削除</button>
       </div>
       <div class="draft-save-status" id="draftSaveStatus"></div>
       <div class="hint">各半荘は、ウマ・オカ・トビまで加味した最終の点差（例：+45, -12 のように1000点単位）を入力してください。卓に着いた人のうち(N-1)人分入力後に自動計算ボタンで残り1人を算出できます。列の合計が0でない場合はセルが赤くなります。休む人は各セルの「休」にチェックしてください。1半荘分（全員の点数）を入れ終わったら「一時保存」を押すことをおすすめします。</div>
@@ -681,9 +682,31 @@
     document.getElementById("gridPanel").style.display = "";
     document.getElementById("statsPanel").style.display = "";
     hideDraftSaveStatus();
+    updateDeleteRecordButton();
     renderGrid();
     renderStats();
     saveDraft();
+  });
+
+  function updateDeleteRecordButton(){
+    document.getElementById("btnDeleteRecord").style.display = (editingIndex !== null) ? "" : "none";
+  }
+
+  document.getElementById("btnDeleteRecord").addEventListener("click", ()=>{
+    if(editingIndex === null || !history[editingIndex]) return;
+    const rec = history[editingIndex];
+    if(!confirm(rec.date + " の記録を削除します。この操作は元に戻せません。よろしいですか？")) return;
+    history.splice(editingIndex, 1);
+    saveHistory();
+    currentDay = null;
+    editingIndex = null;
+    clearDraft();
+    document.getElementById("editingHint").textContent = "";
+    document.getElementById("gridPanel").style.display = "none";
+    document.getElementById("statsPanel").style.display = "none";
+    updateDeleteRecordButton();
+    renderHistoryList();
+    alert("記録を削除しました。");
   });
 
   function hasAnyInput(day){
@@ -1023,6 +1046,7 @@
     document.getElementById("gridPanel").style.display = "none";
     document.getElementById("statsPanel").style.display = "none";
     hideDraftSaveStatus();
+    updateDeleteRecordButton();
     renderHistoryList();
     clearDraft();
     alert("本日分をサマリーに反映しました。記録は下の「保存済みの記録」から確認できます。");
@@ -1092,6 +1116,7 @@
     document.getElementById("gridPanel").style.display = "";
     document.getElementById("statsPanel").style.display = "";
     hideDraftSaveStatus();
+    updateDeleteRecordButton();
     renderGrid();
     renderStats();
     saveDraft();
@@ -1359,6 +1384,7 @@
     }
     document.getElementById("gridPanel").style.display = "";
     document.getElementById("statsPanel").style.display = "";
+    updateDeleteRecordButton();
     renderGrid();
     renderStats();
     const statusEl = document.getElementById("draftSaveStatus");
