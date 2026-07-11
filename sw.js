@@ -1,6 +1,6 @@
 // オフラインでも起動できるようにするためのService Worker
 // 更新を配りたい時は CACHE_NAME の数字を上げること（古いキャッシュを破棄して新しいファイルを取りに行かせる）
-const CACHE_NAME = "mahjong-score-cache-v7";
+const CACHE_NAME = "mahjong-score-cache-v8";
 
 // Cloudflareは「.html」付きURLを拡張子なしURLへ必ずリダイレクトする。
 // リダイレクトされたレスポンスはキャッシュ保存やnavigate応答で問題を起こすため、

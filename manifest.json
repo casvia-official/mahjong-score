@@ -1,7 +1,7 @@
 {
   "name": "麻雀 点数管理",
   "short_name": "麻雀点数管理",
-  "start_url": "./麻雀点数管理.html",
+  "start_url": "./麻雀点数管理",
   "display": "standalone",
   "background_color": "#f7f8fa",
   "theme_color": "#2c3e50",
